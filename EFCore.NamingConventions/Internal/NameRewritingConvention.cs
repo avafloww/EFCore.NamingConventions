@@ -23,8 +23,13 @@ public class NameRewritingConvention :
 
     private readonly INameRewriter _namingNameRewriter;
 
-    public NameRewritingConvention(INameRewriter nameRewriter)
-        => _namingNameRewriter = nameRewriter;
+    private readonly bool _ignoreMigrationTable;
+
+    public NameRewritingConvention(INameRewriter nameRewriter, bool ignoreMigrationTable = false)
+    {
+        _namingNameRewriter = nameRewriter;
+        _ignoreMigrationTable = ignoreMigrationTable;
+    }
 
     public virtual void ProcessEntityTypeAdded(
         IConventionEntityTypeBuilder entityTypeBuilder,
@@ -255,6 +260,11 @@ public class NameRewritingConvention :
 
         // Remove any previous setting of the column name we may have done, so we can get the default recalculated below.
         property.Builder.HasNoAnnotation(RelationalAnnotationNames.ColumnName);
+
+        if (_ignoreMigrationTable && entityType.ClrType.FullName == "Microsoft.EntityFrameworkCore.Migrations.HistoryRow")
+        {
+            return;
+        }
 
         // TODO: The following is a temporary hack. We should probably just always set the relational override below,
         // but https://github.com/dotnet/efcore/pull/23834
